@@ -64,7 +64,7 @@ RegisterServerEvent("srp-mdt:performOffenderSearch")
 AddEventHandler("srp-mdt:performOffenderSearch", function(query)
 	local usource = source
 	local matches = {}
-	MySQL.Async.fetchAll("SELECT * FROM `characters` WHERE LOWER(`first_name`) LIKE @query OR LOWER(`last_name`) LIKE @query OR CONCAT(LOWER(`first_name`), ' ', LOWER(`last_name`)) LIKE @query", {
+	exports.ghmattimysql:execute("SELECT * FROM `characters` WHERE LOWER(`first_name`) LIKE @query OR LOWER(`last_name`) LIKE @query OR CONCAT(LOWER(`first_name`), ' ', LOWER(`last_name`)) LIKE @query", {
 		['@query'] = string.lower('%'..query..'%') -- % wildcard, needed to search for all alike results
 	}, function(result)
 
@@ -143,7 +143,7 @@ RegisterServerEvent("srp-mdt:getOffenderDetailsById")
 AddEventHandler("srp-mdt:getOffenderDetailsById", function(char_id)
 	local usource = source
 
-	local result = MySQL.Sync.fetchAll('SELECT * FROM `characters` WHERE `id` = @id', {
+	local result = exports.ghmattimysql:executeSync('SELECT * FROM `characters` WHERE `id` = @id', {
 		['@id'] = char_id
 	})
 	local offender = result[1]
@@ -154,7 +154,7 @@ AddEventHandler("srp-mdt:getOffenderDetailsById", function(char_id)
 		return
 	end
 
-	local result = MySQL.Sync.fetchAll('SELECT * FROM `user_mdt` WHERE `char_id` = @id', {
+	local result = exports.ghmattimysql:executeSync('SELECT * FROM `user_mdt` WHERE `char_id` = @id', {
 		['@id'] = offender.id
 	})
 	offender.notes = ""
@@ -166,7 +166,7 @@ AddEventHandler("srp-mdt:getOffenderDetailsById", function(char_id)
 		offender.bail = result[1].bail
 	end
 
-	local convictions = MySQL.Sync.fetchAll('SELECT * FROM `user_convictions` WHERE `char_id` = @id', {
+	local convictions = exports.ghmattimysql:executeSync('SELECT * FROM `user_convictions` WHERE `char_id` = @id', {
 		['@id'] = offender.id
 	}) 
 	if convictions[1] then
@@ -177,19 +177,19 @@ AddEventHandler("srp-mdt:getOffenderDetailsById", function(char_id)
 		end
 	end
 
-	local warrants = MySQL.Sync.fetchAll('SELECT * FROM `mdt_warrants` WHERE `char_id` = @id', {
+	local warrants = exports.ghmattimysql:executeSync('SELECT * FROM `mdt_warrants` WHERE `char_id` = @id', {
 		['@id'] = offender.id
 	})
 	if warrants[1] then
 		offender.haswarrant = true
 	end
 
-	local phone_number = MySQL.Sync.fetchAll('SELECT `phone_number` FROM `characters` WHERE `id` = @id', {
+	local phone_number = exports.ghmattimysql:executeSync('SELECT `phone_number` FROM `characters` WHERE `id` = @id', {
 		['@id'] = offender.id
 	})
 	offender.phone_number = phone_number[1].phone_number
 
-	-- local vehicles = MySQL.Sync.fetchAll('SELECT * FROM `characters_cars` WHERE `cid` = @cid', {
+	-- local vehicles = exports.ghmattimysql:executeSync('SELECT * FROM `characters_cars` WHERE `cid` = @cid', {
 	-- 	['@cid'] = offender.id
 	-- })
 	-- for i = 1, #vehicles do
@@ -217,18 +217,18 @@ end)
 RegisterServerEvent("srp-mdt:saveOffenderChanges")
 AddEventHandler("srp-mdt:saveOffenderChanges", function(id, changes, identifier)
 	local usource = source
-	MySQL.Async.fetchAll('SELECT * FROM `user_mdt` WHERE `char_id` = @id', {
+	exports.ghmattimysql:execute('SELECT * FROM `user_mdt` WHERE `char_id` = @id', {
 		['@id']  = id
 	}, function(result)
 		if result[1] then
-			MySQL.Async.execute('UPDATE `user_mdt` SET `notes` = @notes, `mugshot_url` = @mugshot_url, `bail` = @bail WHERE `char_id` = @id', {
+			exports.ghmattimysql:execute('UPDATE `user_mdt` SET `notes` = @notes, `mugshot_url` = @mugshot_url, `bail` = @bail WHERE `char_id` = @id', {
 				['@id'] = id,
 				['@notes'] = changes.notes,
 				['@mugshot_url'] = changes.mugshot_url,
 				['@bail'] = changes.bail
 			})
 		else
-			MySQL.Async.insert('INSERT INTO `user_mdt` (`char_id`, `notes`, `mugshot_url`, `bail`) VALUES (@id, @notes, @mugshot_url, @bail)', {
+			exports.ghmattimysql:execute('INSERT INTO `user_mdt` (`char_id`, `notes`, `mugshot_url`, `bail`) VALUES (@id, @notes, @mugshot_url, @bail)', {
 				['@id'] = id,
 				['@notes'] = changes.notes,
 				['@mugshot_url'] = changes.mugshot_url,
@@ -238,7 +238,7 @@ AddEventHandler("srp-mdt:saveOffenderChanges", function(id, changes, identifier)
 
 		if changes.convictions ~= nil then
 			for conviction, amount in pairs(changes.convictions) do	
-				MySQL.Async.execute('UPDATE `user_convictions` SET `count` = @count WHERE `char_id` = @id AND `offense` = @offense', {
+				exports.ghmattimysql:execute('UPDATE `user_convictions` SET `count` = @count WHERE `char_id` = @id AND `offense` = @offense', {
 					['@id'] = id,
 					['@count'] = amount,
 					['@offense'] = conviction
@@ -247,7 +247,7 @@ AddEventHandler("srp-mdt:saveOffenderChanges", function(id, changes, identifier)
 		end
 
 		for i = 1, #changes.convictions_removed do
-			MySQL.Async.execute('DELETE FROM `user_convictions` WHERE `char_id` = @id AND `offense` = @offense', {
+			exports.ghmattimysql:execute('DELETE FROM `user_convictions` WHERE `char_id` = @id AND `offense` = @offense', {
 				['@id'] = id,
 				['offense'] = changes.convictions_removed[i]
 			})
@@ -259,7 +259,7 @@ end)
 
 RegisterServerEvent("srp-mdt:saveReportChanges")
 AddEventHandler("srp-mdt:saveReportChanges", function(data)
-	MySQL.Async.execute('UPDATE `mdt_reports` SET `title` = @title, `incident` = @incident WHERE `id` = @id', {
+	exports.ghmattimysql:execute('UPDATE `mdt_reports` SET `title` = @title, `incident` = @incident WHERE `id` = @id', {
 		['@id'] = data.id,
 		['@title'] = data.title,
 		['@incident'] = data.incident
@@ -269,7 +269,7 @@ end)
 
 RegisterServerEvent("srp-mdt:deleteReport")
 AddEventHandler("srp-mdt:deleteReport", function(id)
-	MySQL.Async.execute('DELETE FROM `mdt_reports` WHERE `id` = @id', {
+	exports.ghmattimysql:execute('DELETE FROM `mdt_reports` WHERE `id` = @id', {
 		['@id']  = id
 	})
 	TriggerClientEvent("srp-mdt:sendNotification", source, "Report has been successfully deleted.")
@@ -286,7 +286,7 @@ AddEventHandler("srp-mdt:submitNewReport", function(data)
 	end
 	charges = json.encode(data.charges)
 	data.date = os.date('%m-%d-%Y %H:%M:%S', os.time())
-	MySQL.Async.insert('INSERT INTO `mdt_reports` (`char_id`, `title`, `incident`, `charges`, `author`, `name`, `date`, `jailtime`) VALUES (@id, @title, @incident, @charges, @author, @name, @date, @sentence)', {
+	exports.ghmattimysql:execute('INSERT INTO `mdt_reports` (`char_id`, `title`, `incident`, `charges`, `author`, `name`, `date`, `jailtime`) VALUES (@id, @title, @incident, @charges, @author, @name, @date, @sentence)', {
 		['@id']  = data.char_id,
 		['@title'] = data.title,
 		['@incident'] = data.incident,
@@ -301,18 +301,18 @@ AddEventHandler("srp-mdt:submitNewReport", function(data)
 	end)
 
 	for offense, count in pairs(data.charges) do
-		MySQL.Async.fetchAll('SELECT * FROM `user_convictions` WHERE `offense` = @offense AND `char_id` = @id', {
+		exports.ghmattimysql:execute('SELECT * FROM `user_convictions` WHERE `offense` = @offense AND `char_id` = @id', {
 			['@offense'] = offense,
 			['@id'] = data.char_id
 		}, function(result)
 			if result[1] then
-				MySQL.Async.execute('UPDATE `user_convictions` SET `count` = @count WHERE `offense` = @offense AND `char_id` = @id', {
+				exports.ghmattimysql:execute('UPDATE `user_convictions` SET `count` = @count WHERE `offense` = @offense AND `char_id` = @id', {
 					['@id']  = data.char_id,
 					['@offense'] = offense,
 					['@count'] = count + 1
 				})
 			else
-				MySQL.Async.insert('INSERT INTO `user_convictions` (`char_id`, `offense`, `count`) VALUES (@id, @offense, @count)', {
+				exports.ghmattimysql:execute('INSERT INTO `user_convictions` (`char_id`, `offense`, `count`) VALUES (@id, @offense, @count)', {
 					['@id']  = data.char_id,
 					['@offense'] = offense,
 					['@count'] = count
@@ -326,7 +326,7 @@ RegisterServerEvent("srp-mdt:performReportSearch")
 AddEventHandler("srp-mdt:performReportSearch", function(query)
 	local usource = source
 	local matches = {}
-	MySQL.Async.fetchAll("SELECT * FROM `mdt_reports` WHERE `id` LIKE @query OR LOWER(`title`) LIKE @query OR LOWER(`name`) LIKE @query OR LOWER(`author`) LIKE @query or LOWER(`charges`) LIKE @query", {
+	exports.ghmattimysql:execute("SELECT * FROM `mdt_reports` WHERE `id` LIKE @query OR LOWER(`title`) LIKE @query OR LOWER(`name`) LIKE @query OR LOWER(`author`) LIKE @query or LOWER(`charges`) LIKE @query", {
 		['@query'] = string.lower('%'..query..'%') -- % wildcard, needed to search for all alike results
 	}, function(result)
 
@@ -343,7 +343,7 @@ end)
 -- AddEventHandler("srp-mdt:performVehicleSearch", function(query)
 -- 	local usource = source
 -- 	local matches = {}
--- 	MySQL.Async.fetchAll("SELECT * FROM `characters_cars` WHERE LOWER(`license_plate`) LIKE @query", {
+-- 	exports.ghmattimysql:execute("SELECT * FROM `characters_cars` WHERE LOWER(`license_plate`) LIKE @query", {
 -- 		['@query'] = string.lower('%'..query..'%') -- % wildcard, needed to search for all alike results
 -- 	}, function(result)
 
@@ -370,15 +370,15 @@ end)
 --     local characterId = user:getVar("character").id
 -- 	exports.ghmattimysql:execute("SELECT * FROM character_passes WHERE cid = @cid", {['cid'] = characterId}, function(result)
 -- 		if result[1].pass_type == 'police' or result[1].pass_type == 'DOJ' then
--- 			MySQL.Async.fetchAll("SELECT * FROM (SELECT * FROM `mdt_reports` ORDER BY `id` DESC LIMIT 3) sub ORDER BY `id` DESC", {}, function(reports)
+-- 			exports.ghmattimysql:execute("SELECT * FROM (SELECT * FROM `mdt_reports` ORDER BY `id` DESC LIMIT 3) sub ORDER BY `id` DESC", {}, function(reports)
 -- 				for r = 1, #reports do
 -- 					reports[r].charges = json.decode(reports[r].charges)
 -- 				end
--- 				MySQL.Async.fetchAll("SELECT * FROM (SELECT * FROM `mdt_warrants` ORDER BY `id` DESC LIMIT 3) sub ORDER BY `id` DESC", {}, function(warrants)
+-- 				exports.ghmattimysql:execute("SELECT * FROM (SELECT * FROM `mdt_warrants` ORDER BY `id` DESC LIMIT 3) sub ORDER BY `id` DESC", {}, function(warrants)
 -- 					for w = 1, #warrants do
 -- 						warrants[w].charges = json.decode(warrants[w].charges)
 -- 					end
--- 					MySQL.Async.fetchAll("SELECT * FROM `characters_cars` WHERE `license_plate` = @query", {
+-- 					exports.ghmattimysql:execute("SELECT * FROM `characters_cars` WHERE `license_plate` = @query", {
 -- 						['@query'] = query
 -- 					}, function(result)
 -- 						local officer = GetCharacterName(usource)
@@ -394,7 +394,7 @@ end)
 -- RegisterServerEvent("srp-mdt:getVehicle")
 -- AddEventHandler("srp-mdt:getVehicle", function(vehicle)
 -- 	local usource = source
--- 	local result = MySQL.Sync.fetchAll("SELECT * FROM `characters` WHERE `id` = @query", {
+-- 	local result = exports.ghmattimysql:executeSync("SELECT * FROM `characters` WHERE `id` = @query", {
 -- 		['@query'] = vehicle.cid
 -- 	})
 -- 	if result[1] then
@@ -402,7 +402,7 @@ end)
 -- 		vehicle.owner_id = result[1].id
 -- 	end
 
--- 	local data = MySQL.Sync.fetchAll('SELECT * FROM `vehicle_mdt` WHERE `plate` = @plate', {
+-- 	local data = exports.ghmattimysql:executeSync('SELECT * FROM `vehicle_mdt` WHERE `plate` = @plate', {
 -- 		['@plate'] = vehicle.plate
 -- 	})
 -- 	if data[1] then
@@ -413,14 +413,14 @@ end)
 -- 		vehicle.notes = ''
 -- 	end
 
--- 	local warrants = MySQL.Sync.fetchAll('SELECT * FROM `mdt_warrants` WHERE `char_id` = @id', {
+-- 	local warrants = exports.ghmattimysql:executeSync('SELECT * FROM `mdt_warrants` WHERE `char_id` = @id', {
 -- 		['@id'] = vehicle.owner_id
 -- 	})
 -- 	if warrants[1] then
 -- 		vehicle.haswarrant = true
 -- 	end
 
--- 	local bail = MySQL.Sync.fetchAll('SELECT `bail` FROM user_mdt WHERE `char_id` = @id', {
+-- 	local bail = exports.ghmattimysql:executeSync('SELECT `bail` FROM user_mdt WHERE `char_id` = @id', {
 -- 		['@id'] = vehicle.owner_id
 -- 	})
 -- 	if bail and bail[1] and bail[1].bail == 1 then vehicle.bail = true else vehicle.bail = false end
@@ -432,7 +432,7 @@ end)
 RegisterServerEvent("srp-mdt:getWarrants")
 AddEventHandler("srp-mdt:getWarrants", function()
 	local usource = source
-	MySQL.Async.fetchAll("SELECT * FROM `mdt_warrants`", {}, function(warrants)
+	exports.ghmattimysql:execute("SELECT * FROM `mdt_warrants`", {}, function(warrants)
 		for i = 1, #warrants do
 			warrants[i].expire_time = ""
 			warrants[i].charges = json.decode(warrants[i].charges)
@@ -447,7 +447,7 @@ AddEventHandler("srp-mdt:submitNewWarrant", function(data)
 	data.charges = json.encode(data.charges)
 	data.author = GetCharacterName(source)
 	data.date = os.date('%m-%d-%Y %H:%M:%S', os.time())
-	MySQL.Async.insert('INSERT INTO `mdt_warrants` (`name`, `char_id`, `report_id`, `report_title`, `charges`, `date`, `expire`, `notes`, `author`) VALUES (@name, @char_id, @report_id, @report_title, @charges, @date, @expire, @notes, @author)', {
+	exports.ghmattimysql:execute('INSERT INTO `mdt_warrants` (`name`, `char_id`, `report_id`, `report_title`, `charges`, `date`, `expire`, `notes`, `author`) VALUES (@name, @char_id, @report_id, @report_title, @charges, @date, @expire, @notes, @author)', {
 		['@name']  = data.name,
 		['@char_id'] = data.char_id,
 		['@report_id'] = data.report_id,
@@ -466,7 +466,7 @@ end)
 RegisterServerEvent("srp-mdt:deleteWarrant")
 AddEventHandler("srp-mdt:deleteWarrant", function(id)
 	local usource = source
-	MySQL.Async.execute('DELETE FROM `mdt_warrants` WHERE `id` = @id', {
+	exports.ghmattimysql:execute('DELETE FROM `mdt_warrants` WHERE `id` = @id', {
 		['@id']  = id
 	}, function()
 		TriggerClientEvent("srp-mdt:completedWarrantAction", usource)
@@ -478,7 +478,7 @@ RegisterServerEvent("srp-mdt:getReportDetailsById")
 AddEventHandler("srp-mdt:getReportDetailsById", function(query, _source)
 	if _source then source = _source end
 	local usource = source
-	MySQL.Async.fetchAll("SELECT * FROM `mdt_reports` WHERE `id` = @query", {
+	exports.ghmattimysql:execute("SELECT * FROM `mdt_reports` WHERE `id` = @query", {
 		['@query'] = query
 	}, function(result)
 		if result and result[1] then
@@ -495,17 +495,17 @@ end)
 -- AddEventHandler("srp-mdt:saveVehicleChanges", function(data)
 -- 	if data.stolen then data.stolen = 1 else data.stolen = 0 end
 -- 	local usource = source
--- 	MySQL.Async.fetchAll('SELECT * FROM `vehicle_mdt` WHERE `plate` = @plate', {
+-- 	exports.ghmattimysql:execute('SELECT * FROM `vehicle_mdt` WHERE `plate` = @plate', {
 -- 		['@plate'] = plate
 -- 	}, function(result)
 -- 		if result[1] then
--- 			MySQL.Async.execute('UPDATE `vehicle_mdt` SET `stolen` = @stolen, `notes` = @notes WHERE `plate` = @plate', {
+-- 			exports.ghmattimysql:execute('UPDATE `vehicle_mdt` SET `stolen` = @stolen, `notes` = @notes WHERE `plate` = @plate', {
 -- 				['@plate'] = data.plate,
 -- 				['@stolen'] = data.stolen,
 -- 				['@notes'] = data.notes
 -- 			})
 -- 		else
--- 			MySQL.Async.insert('INSERT INTO `vehicle_mdt` (`plate`, `stolen`, `notes`) VALUES (@plate, @stolen, @notes)', {
+-- 			exports.ghmattimysql:execute('INSERT INTO `vehicle_mdt` (`plate`, `stolen`, `notes`) VALUES (@plate, @stolen, @notes)', {
 -- 				['@plate'] = data.plate,
 -- 				['@stolen'] = data.stolen,
 -- 				['@notes'] = data.notes
@@ -520,7 +520,7 @@ function GetCharacterName(source)
 	local user = exports["srp-base"]:getModule("Player"):GetUser(source)
 	if user ~= false then
 		local characterId = user:getVar("character").id
-		local result = MySQL.Sync.fetchAll('SELECT first_name, last_name FROM characters WHERE id = @id', {
+		local result = exports.ghmattimysql:executeSync('SELECT first_name, last_name FROM characters WHERE id = @id', {
 			['@id'] = characterId
 		})
 
