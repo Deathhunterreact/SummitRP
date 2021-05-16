@@ -6,11 +6,11 @@ AddEventHandler("srp-mdt:Open", function(type)
 	if type == "police" then
 		exports.ghmattimysql:execute("SELECT * FROM character_passes WHERE cid = @cid", {['cid'] = characterId}, function(result)
 			if result[1].pass_type == 'police' then
-				MySQL.Async.fetchAll("SELECT * FROM (SELECT * FROM `mdt_reports` ORDER BY `id` DESC LIMIT 3) sub ORDER BY `id` DESC", {}, function(reports)
+				exports.ghmattimysql:execute("SELECT * FROM (SELECT * FROM `mdt_reports` ORDER BY `id` DESC LIMIT 3) sub ORDER BY `id` DESC", {}, function(reports)
 					for r = 1, #reports do
 						reports[r].charges = json.decode(reports[r].charges)
 					end
-					MySQL.Async.fetchAll("SELECT * FROM (SELECT * FROM `mdt_warrants` ORDER BY `id` DESC LIMIT 3) sub ORDER BY `id` DESC", {}, function(warrants)
+					exports.ghmattimysql:execute("SELECT * FROM (SELECT * FROM `mdt_warrants` ORDER BY `id` DESC LIMIT 3) sub ORDER BY `id` DESC", {}, function(warrants)
 						for w = 1, #warrants do
 							warrants[w].charges = json.decode(warrants[w].charges)
 						end
@@ -24,11 +24,11 @@ AddEventHandler("srp-mdt:Open", function(type)
 	elseif type == "DOJ" then
 		exports.ghmattimysql:execute("SELECT * FROM character_passes WHERE cid = @cid", {['cid'] = characterId}, function(result2)
 			if result2[1].pass_type == 'DOJ' and result2[1].rank >= 3 then
-				MySQL.Async.fetchAll("SELECT * FROM (SELECT * FROM `mdt_reports` ORDER BY `id` DESC LIMIT 3) sub ORDER BY `id` DESC", {}, function(reports)
+				exports.ghmattimysql:execute("SELECT * FROM (SELECT * FROM `mdt_reports` ORDER BY `id` DESC LIMIT 3) sub ORDER BY `id` DESC", {}, function(reports)
 					for r = 1, #reports do
 						reports[r].charges = json.decode(reports[r].charges)
 					end
-					MySQL.Async.fetchAll("SELECT * FROM (SELECT * FROM `mdt_warrants` ORDER BY `id` DESC LIMIT 3) sub ORDER BY `id` DESC", {}, function(warrants)
+					exports.ghmattimysql:execute("SELECT * FROM (SELECT * FROM `mdt_warrants` ORDER BY `id` DESC LIMIT 3) sub ORDER BY `id` DESC", {}, function(warrants)
 						for w = 1, #warrants do
 							warrants[w].charges = json.decode(warrants[w].charges)
 						end
@@ -46,7 +46,7 @@ RegisterServerEvent("srp-mdt:getOffensesAndOfficer")
 AddEventHandler("srp-mdt:getOffensesAndOfficer", function()
 	local usource = source
 	local charges = {}
-	MySQL.Async.fetchAll('SELECT * FROM fine_types', {
+	exports.ghmattimysql:execute('SELECT * FROM fine_types', {
 	}, function(fines)
 		for j = 1, #fines do
 			if fines[j].category == 0 or fines[j].category == 1 or fines[j].category == 2 or fines[j].category == 3 then
@@ -79,7 +79,7 @@ end)
 RegisterServerEvent("srp-mdt:getOffenderDetails")
 AddEventHandler("srp-mdt:getOffenderDetails", function(offender)
 	local usource = source
-	local result = MySQL.Sync.fetchAll('SELECT * FROM `user_mdt` WHERE `char_id` = @id', {
+	local result = exports.ghmattimysql:executeSync('SELECT * FROM `user_mdt` WHERE `char_id` = @id', {
 		['@id'] = offender.id
 	})
 	offender.notes = ""
@@ -91,7 +91,7 @@ AddEventHandler("srp-mdt:getOffenderDetails", function(offender)
 		offender.bail = result[1].bail
 	end
 
-	local convictions = MySQL.Sync.fetchAll('SELECT * FROM `user_convictions` WHERE `char_id` = @id', {
+	local convictions = exports.ghmattimysql:executeSync('SELECT * FROM `user_convictions` WHERE `char_id` = @id', {
 		['@id'] = offender.id
 	})
 	if convictions[1] then
@@ -102,19 +102,19 @@ AddEventHandler("srp-mdt:getOffenderDetails", function(offender)
 		end
 	end
 
-	local warrants = MySQL.Sync.fetchAll('SELECT * FROM `mdt_warrants` WHERE `char_id` = @id', {
+	local warrants = exports.ghmattimysql:executeSync('SELECT * FROM `mdt_warrants` WHERE `char_id` = @id', {
 		['@id'] = offender.id
 	})
 	if warrants[1] then
 		offender.haswarrant = true
 	end
 
-	local phone_number = MySQL.Sync.fetchAll('SELECT `phone_number` FROM `characters` WHERE `id` = @id', {
+	local phone_number = exports.ghmattimysql:executeSync('SELECT `phone_number` FROM `characters` WHERE `id` = @id', {
 		['@id'] = offender.id
 	})
 	offender.phone_number = phone_number[1].phone_number
 
-	-- local vehicles = MySQL.Sync.fetchAll('SELECT * FROM `characters_cars` WHERE `cid` = @cid', {
+	-- local vehicles = exports.ghmattimysql:executeSync('SELECT * FROM `characters_cars` WHERE `cid` = @cid', {
 	-- 	['@cid'] = offender.id
 	-- })
 	-- for i = 1, #vehicles do
