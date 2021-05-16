@@ -2218,317 +2218,317 @@ end
 -- weed growing shit brah
 
 
-local crops = {
+-- local crops = {
 
-}
+-- }
 
-local cropstatus = {
-	[1] = { ["info"] = "Looks Good", ["itemid"] = 0 },
-	[2] = { ["info"] = "Needs Water", ["itemid"] = 0 },
-	[3] = { ["info"] = "Needs Fertilizer", ["itemid"] = 0 },
-}
-
-
-RegisterNetEvent("weed:currentcrops")
-AddEventHandler("weed:currentcrops", function(result)
-	local newcrops = {}
-	for i = 1, #result do
-		local table = result[i]
-		newcrops[i] = {  ["x"] = tonumber(table.x), ["y"] = tonumber(table.y), ["z"] = tonumber(table.z), ["growth"] = tonumber(table.growth), ["strain"] = table.strain, ["status"] = tonumber(table.status), ["dbID"] = tonumber(table.id) }
-	end
-	DeleteTrees()
-    crops = newcrops
-end)
-
-function DeleteTrees()
-	for i = 1, #crops do
-		local ObjectFound = crops[i]["object"]
-		if ObjectFound then
-			DeleteObject(ObjectFound)
-		end
-	end
-end
-
-function createTreeObject(num)
-	local treeModel = `bkr_prop_weed_med_01b`
-	local zm = 3.55
-	if (crops[num]["growth"] < 33) then
-		zm = 1
-		treeModel = `bkr_prop_weed_01_small_01b`
-	elseif (crops[num]["growth"] > 66) then
-		treeModel = `bkr_prop_weed_lrg_01b`
-	end
+-- local cropstatus = {
+-- 	[1] = { ["info"] = "Looks Good", ["itemid"] = 0 },
+-- 	[2] = { ["info"] = "Needs Water", ["itemid"] = 0 },
+-- 	[3] = { ["info"] = "Needs Fertilizer", ["itemid"] = 0 },
+-- }
 
 
-	RequestModel(treeModel)
-	while not HasModelLoaded(treeModel) do
-		Citizen.Wait(100)
+-- RegisterNetEvent("weed:currentcrops")
+-- AddEventHandler("weed:currentcrops", function(result)
+-- 	local newcrops = {}
+-- 	for i = 1, #result do
+-- 		local table = result[i]
+-- 		newcrops[i] = {  ["x"] = tonumber(table.x), ["y"] = tonumber(table.y), ["z"] = tonumber(table.z), ["growth"] = tonumber(table.growth), ["strain"] = table.strain, ["status"] = tonumber(table.status), ["dbID"] = tonumber(table.id) }
+-- 	end
+-- 	DeleteTrees()
+--     crops = newcrops
+-- end)
 
-	end
+-- function DeleteTrees()
+-- 	for i = 1, #crops do
+-- 		local ObjectFound = crops[i]["object"]
+-- 		if ObjectFound then
+-- 			DeleteObject(ObjectFound)
+-- 		end
+-- 	end
+-- end
 
-	local newtree = CreateObject(treeModel,crops[num]["x"],crops[num]["y"],crops[num]["z"]-zm,true,false,false)
-	SetEntityCollision(newtree,false,false)
-	crops[num]["object"] = newtree
-end
-
-function RemoveWeedSeed(seedType)
-	TriggerEvent("inventory:removeItem","plastic", 3)
-	if seedType == "female" then
-	    TriggerEvent("inventory:removeItem", "femaleseed", 1)
-	else
-		TriggerEvent("inventory:removeItem", "maleseed", 1)
-	end
-end
-
-function InsertPlant(seed)
-	local strain = seed
-	local x,y,z = table.unpack(GetOffsetFromEntityInWorldCoords(plyId, 0.0, 0.4, 0.0))
-	TriggerServerEvent("weed:createplant",x,y,z,strain)
-end
-
-
-
-function nearMale()
-
-	local answer = false
-
-	for i = 1, #crops do
-    	local dst = #(vector3(crops[i]["x"],crops[i]["y"],crops[i]["z"]) - plyCoords)
-    	if dst < 10.0 and crops[i]["strain"] == "Male" then
-    		answer = true
-    	end
-	end
+-- function createTreeObject(num)
+-- 	local treeModel = `bkr_prop_weed_med_01b`
+-- 	local zm = 3.55
+-- 	if (crops[num]["growth"] < 33) then
+-- 		zm = 1
+-- 		treeModel = `bkr_prop_weed_01_small_01b`
+-- 	elseif (crops[num]["growth"] > 66) then
+-- 		treeModel = `bkr_prop_weed_lrg_01b`
+-- 	end
 
 
-	return answer
+-- 	RequestModel(treeModel)
+-- 	while not HasModelLoaded(treeModel) do
+-- 		Citizen.Wait(100)
 
-end
+-- 	end
 
-function convertFemales()
-	local convertedIds = false
-	local convertedTable = {}
-	for i = 1, #crops do
-    	local dst = #(vector3(crops[i]["x"],crops[i]["y"],crops[i]["z"]) - plyCoords)
-    	if dst < 10.0 and crops[i]["strain"] == "Kush" and crops[i]["growth"] < 34 then
-    		if not convertedIds then
-    			convertedIds = crops[i]["dbID"]
-    		else
-    			convertedIds = convertedIds .. "," .. crops[i]["dbID"]
-    			convertedTable[#convertedTable+1] = crops[i]["dbID"]
-    		end    		
-    	end
-	end
-	if not convertedIds then
-		return
-	end
-	TriggerServerEvent("weed:convert",convertedIds,convertedTable)
-end
+-- 	local newtree = CreateObject(treeModel,crops[num]["x"],crops[num]["y"],crops[num]["z"]-zm,true,false,false)
+-- 	SetEntityCollision(newtree,false,false)
+-- 	crops[num]["object"] = newtree
+-- end
 
-RegisterNetEvent("weed:startcrop")
-AddEventHandler("weed:startcrop", function(seedType)
+-- function RemoveWeedSeed(seedType)
+-- 	TriggerEvent("inventory:removeItem","plastic", 3)
+-- 	if seedType == "female" then
+-- 	    TriggerEvent("inventory:removeItem", "femaleseed", 1)
+-- 	else
+-- 		TriggerEvent("inventory:removeItem", "maleseed", 1)
+-- 	end
+-- end
 
-
-	if not exports["srp-inventory"]:hasEnoughOfItem("plastic",3,true) then
-		return
-	end
-
-	local Seed = "Kush"
-
-	if seedType == "female" and nearMale() then
-		Seed = "Seeded"
-	end
+-- function InsertPlant(seed)
+-- 	local strain = seed
+-- 	local x,y,z = table.unpack(GetOffsetFromEntityInWorldCoords(plyId, 0.0, 0.4, 0.0))
+-- 	TriggerServerEvent("weed:createplant",x,y,z,strain)
+-- end
 
 
-	if seedType == "male" then
-		convertFemales()
-		Seed = "Male"
-	end
 
-    local success = true
+-- function nearMale()
 
-    for i = 1, #crops do
-    	local dst = #(vector3(crops[i]["x"],crops[i]["y"],crops[i]["z"]) - plyCoords)
-    	if dst < 1.0 then
-    		success = false
-    	end
-    end
+-- 	local answer = false
 
-    if success then
-        RemoveWeedSeed(seedType)
-        InsertPlant(Seed)
-    end
-
-end)
+-- 	for i = 1, #crops do
+--     	local dst = #(vector3(crops[i]["x"],crops[i]["y"],crops[i]["z"]) - plyCoords)
+--     	if dst < 10.0 and crops[i]["strain"] == "Male" then
+--     		answer = true
+--     	end
+-- 	end
 
 
-RegisterNetEvent("weed:destroyplant")
-AddEventHandler("weed:destroyplant", function()
+-- 	return answer
 
-	local close = 0
-	local dst = 1000.0
-	for i = 1, #crops do
-		local storagedist = #(vector3(crops[i]["x"],crops[i]["y"],crops[i]["z"]) - plyCoords)
-		if storagedist < 3.0 then
-			if storagedist < dst then
-				dst = storagedist
-				close = i
-			end
-		end
-	end
-	local finished = exports["srp-taskbar"]:taskBar(6000,"Destroy")
-	if finished == 100 then
-		TriggerServerEvent("weed:destroy",crops[close]["dbID"])
-	end
-end)
+-- end
 
-RegisterNetEvent("weed:updateplantwithID")
-AddEventHandler("weed:updateplantwithID", function(ids,newPercent,status)
-	if status == "alter" then
-		for i = 1, #crops do
-			if(crops[i] ~= nil) then
-				if crops[i]["dbID"] == ids then
-					crops[i]["growth"] = newPercent
-					crops[i]["status"] = 1
-				end
-			end
-		end		
-	elseif status == "remove" then
+-- function convertFemales()
+-- 	local convertedIds = false
+-- 	local convertedTable = {}
+-- 	for i = 1, #crops do
+--     	local dst = #(vector3(crops[i]["x"],crops[i]["y"],crops[i]["z"]) - plyCoords)
+--     	if dst < 10.0 and crops[i]["strain"] == "Kush" and crops[i]["growth"] < 34 then
+--     		if not convertedIds then
+--     			convertedIds = crops[i]["dbID"]
+--     		else
+--     			convertedIds = convertedIds .. "," .. crops[i]["dbID"]
+--     			convertedTable[#convertedTable+1] = crops[i]["dbID"]
+--     		end    		
+--     	end
+-- 	end
+-- 	if not convertedIds then
+-- 		return
+-- 	end
+-- 	TriggerServerEvent("weed:convert",convertedIds,convertedTable)
+-- end
 
-		for i = 1, #crops do
-			if(crops[i] ~= nil) then
-				if crops[i]["dbID"] == ids then
-					table.remove(crops,i)
-				end
-			end
-		end
-
-	elseif status == "convert" then
-		for d = 1, #ids do
-			for i = 1, #crops do
-				if(crops[i] ~= nil) then
-					if crops[i]["dbID"] == ids then
-						crops[i]["strain"] = "seeded"
-					end
-				end
-			end
-		end
-	elseif status == "new" then
-		crops[#crops+1] = ids
-	end
-end)
+-- RegisterNetEvent("weed:startcrop")
+-- AddEventHandler("weed:startcrop", function(seedType)
 
 
-RegisterNetEvent("weed:giveitems")
-AddEventHandler("weed:giveitems", function(strain)
+-- 	if not exports["srp-inventory"]:hasEnoughOfItem("plastic",3,true) then
+-- 		return
+-- 	end
 
-	if strain == "Seeded" then
-        TriggerEvent( "player:receiveItem","femaleseed",math.random(1,12))
-		if math.random(100) < 10 then
-	        TriggerEvent( "player:receiveItem","maleseed",1)
-	    end    
-	else
-		if strain == "Male" then
-			TriggerEvent( "player:receiveItem","femaleseed",math.random(1,2))
-			TriggerEvent( "player:receiveItem","weedq",math.random(3,8))
-		else
+-- 	local Seed = "Kush"
 
-			Citizen.Wait(500)
-			TriggerEvent( "player:receiveItem","weedq",math.random(10,25))
-		end
-	end
-end)
+-- 	if seedType == "female" and nearMale() then
+-- 		Seed = "Seeded"
+-- 	end
 
 
-local inhouse = false
-RegisterNetEvent("inhouse")
-AddEventHandler("inhouse", function(status)
-	inhouse = status
-end)
+-- 	if seedType == "male" then
+-- 		convertFemales()
+-- 		Seed = "Male"
+-- 	end
 
-Citizen.CreateThread( function()
-	local counter = 0
-	while true do 
+--     local success = true
 
-		if not inhouse then
-			Citizen.Wait(3000)
-		else
-			Citizen.Wait(1)
-			local close = 0
-			local dst = 1000.0
-			for i = 1, #crops do
-				local storagedist = #(vector3(crops[i]["x"],crops[i]["y"],crops[i]["z"]) - plyCoords)
-				if storagedist < 80.0 then
-					if storagedist < dst then
-						dst = storagedist
-						close = i
-					end
-					if crops[i]["object"] == nil then
-						createTreeObject(i)
-					elseif crops[i]["object"] then
-						if not DoesEntityExist(crops[i]["object"]) then
-							createTreeObject(i)
-						end					
-					end
-				else
-					if crops[i]["object"] then
-						DeleteObject(crops[i]["object"])
-						crops[i]["object"] = nil
-					end
-				end
-			end
+--     for i = 1, #crops do
+--     	local dst = #(vector3(crops[i]["x"],crops[i]["y"],crops[i]["z"]) - plyCoords)
+--     	if dst < 1.0 then
+--     		success = false
+--     	end
+--     end
 
-			if counter > 0 then
-				counter = counter - 1
-			end
-			if dst > 80.0 then
-				if counter > 0 or counter < 0 then
-					counter = 0
-				end
-				Citizen.Wait(math.ceil(dst*3))
-			else
-				if #(vector3(crops[close]["x"],crops[close]["y"],crops[close]["z"]-0.3) - plyCoords) < 10.0 then
-					local num = tonumber(crops[close]["status"])
-					DrawText3Ds( crops[close]["x"],crops[close]["y"], crops[close]["z"] , "["..Controlkey["generalUse"][2].."] " .. crops[close]["strain"] .. " Strain  @ " .. crops[close]["growth"] .. "% - " .. cropstatus[num]["info"])
-					if IsControlJustReleased(2, Controlkey["generalUse"][1]) and #(vector3(crops[close]["x"],crops[close]["y"],crops[close]["z"]-0.3) - plyCoords) < 2.0 and counter == 0 then
-						if crops[close]["growth"] > 100 then
-							local finished = exports["srp-taskbar"]:taskBar(1000,"Picking")
-							TriggerEvent("Evidence:StateSet",4,1600)
+--     if success then
+--         RemoveWeedSeed(seedType)
+--         InsertPlant(Seed)
+--     end
+
+-- end)
+
+
+-- RegisterNetEvent("weed:destroyplant")
+-- AddEventHandler("weed:destroyplant", function()
+
+-- 	local close = 0
+-- 	local dst = 1000.0
+-- 	for i = 1, #crops do
+-- 		local storagedist = #(vector3(crops[i]["x"],crops[i]["y"],crops[i]["z"]) - plyCoords)
+-- 		if storagedist < 3.0 then
+-- 			if storagedist < dst then
+-- 				dst = storagedist
+-- 				close = i
+-- 			end
+-- 		end
+-- 	end
+-- 	local finished = exports["srp-taskbar"]:taskBar(6000,"Destroy")
+-- 	if finished == 100 then
+-- 		TriggerServerEvent("weed:destroy",crops[close]["dbID"])
+-- 	end
+-- end)
+
+-- RegisterNetEvent("weed:updateplantwithID")
+-- AddEventHandler("weed:updateplantwithID", function(ids,newPercent,status)
+-- 	if status == "alter" then
+-- 		for i = 1, #crops do
+-- 			if(crops[i] ~= nil) then
+-- 				if crops[i]["dbID"] == ids then
+-- 					crops[i]["growth"] = newPercent
+-- 					crops[i]["status"] = 1
+-- 				end
+-- 			end
+-- 		end		
+-- 	elseif status == "remove" then
+
+-- 		for i = 1, #crops do
+-- 			if(crops[i] ~= nil) then
+-- 				if crops[i]["dbID"] == ids then
+-- 					table.remove(crops,i)
+-- 				end
+-- 			end
+-- 		end
+
+-- 	elseif status == "convert" then
+-- 		for d = 1, #ids do
+-- 			for i = 1, #crops do
+-- 				if(crops[i] ~= nil) then
+-- 					if crops[i]["dbID"] == ids then
+-- 						crops[i]["strain"] = "seeded"
+-- 					end
+-- 				end
+-- 			end
+-- 		end
+-- 	elseif status == "new" then
+-- 		crops[#crops+1] = ids
+-- 	end
+-- end)
+
+
+-- RegisterNetEvent("weed:giveitems")
+-- AddEventHandler("weed:giveitems", function(strain)
+
+-- 	if strain == "Seeded" then
+--         TriggerEvent( "player:receiveItem","femaleseed",math.random(1,12))
+-- 		if math.random(100) < 10 then
+-- 	        TriggerEvent( "player:receiveItem","maleseed",1)
+-- 	    end    
+-- 	else
+-- 		if strain == "Male" then
+-- 			TriggerEvent( "player:receiveItem","femaleseed",math.random(1,2))
+-- 			TriggerEvent( "player:receiveItem","weedq",math.random(3,8))
+-- 		else
+
+-- 			Citizen.Wait(500)
+-- 			TriggerEvent( "player:receiveItem","weedq",math.random(10,25))
+-- 		end
+-- 	end
+-- end)
+
+
+-- local inhouse = false
+-- RegisterNetEvent("inhouse")
+-- AddEventHandler("inhouse", function(status)
+-- 	inhouse = status
+-- end)
+
+-- Citizen.CreateThread( function()
+-- 	local counter = 0
+-- 	while true do 
+
+-- 		if not inhouse then
+-- 			Citizen.Wait(3000)
+-- 		else
+-- 			Citizen.Wait(1)
+-- 			local close = 0
+-- 			local dst = 1000.0
+-- 			for i = 1, #crops do
+-- 				local storagedist = #(vector3(crops[i]["x"],crops[i]["y"],crops[i]["z"]) - plyCoords)
+-- 				if storagedist < 80.0 then
+-- 					if storagedist < dst then
+-- 						dst = storagedist
+-- 						close = i
+-- 					end
+-- 					if crops[i]["object"] == nil then
+-- 						createTreeObject(i)
+-- 					elseif crops[i]["object"] then
+-- 						if not DoesEntityExist(crops[i]["object"]) then
+-- 							createTreeObject(i)
+-- 						end					
+-- 					end
+-- 				else
+-- 					if crops[i]["object"] then
+-- 						DeleteObject(crops[i]["object"])
+-- 						crops[i]["object"] = nil
+-- 					end
+-- 				end
+-- 			end
+
+-- 			if counter > 0 then
+-- 				counter = counter - 1
+-- 			end
+-- 			if dst > 80.0 then
+-- 				if counter > 0 or counter < 0 then
+-- 					counter = 0
+-- 				end
+-- 				Citizen.Wait(math.ceil(dst*3))
+-- 			else
+-- 				if #(vector3(crops[close]["x"],crops[close]["y"],crops[close]["z"]-0.3) - plyCoords) < 10.0 then
+-- 					local num = tonumber(crops[close]["status"])
+-- 					DrawText3Ds( crops[close]["x"],crops[close]["y"], crops[close]["z"] , "["..Controlkey["generalUse"][2].."] " .. crops[close]["strain"] .. " Strain  @ " .. crops[close]["growth"] .. "% - " .. cropstatus[num]["info"])
+-- 					if IsControlJustReleased(2, Controlkey["generalUse"][1]) and #(vector3(crops[close]["x"],crops[close]["y"],crops[close]["z"]-0.3) - plyCoords) < 2.0 and counter == 0 then
+-- 						if crops[close]["growth"] > 100 then
+-- 							local finished = exports["srp-taskbar"]:taskBar(1000,"Picking")
+-- 							TriggerEvent("Evidence:StateSet",4,1600)
 							
-							TriggerServerEvent("weed:killplant",crops[close]["dbID"])
-							TriggerEvent("weed:giveitems",crops[close]["strain"])
-						else
-							if crops[close]["status"] == 1 then
-								TriggerEvent("customNotification","This crop doesnt need any attention.")
-							else
-								if crops[close]["strain"] == "Seeded" then
-									if exports["srp-inventory"]:hasEnoughOfItem("fertilizer",1,false) then
-										TriggerEvent("Evidence:StateSet",4,1600)
-										if math.random(100) > 85 then
-											TriggerEvent("customNotification","You just consumed all the Fertilizer.")
-											TriggerEvent("inventory:removeItem", "fertilizer", 1)
-										end
-										local new = crops[close]["growth"] + math.random(25,45)
-										TriggerServerEvent("weed:UpdateWeedGrowth",crops[close]["dbID"],new)
-									else
-										TriggerEvent("customNotification","You need Fertilizer for this!")
-									end
-								else
-									if exports["srp-inventory"]:hasEnoughOfItem("water",1,false) then
-										TriggerEvent("Evidence:StateSet",4,1600)
-										TriggerEvent("inventory:removeItem", "water", 1)
-										local new = crops[close]["growth"] + math.random(14,17)
-										TriggerServerEvent("weed:UpdateWeedGrowth",crops[close]["dbID"],new)
-									else
-										TriggerEvent("customNotification","You need 1 bottle of water for this!")
-									end
-								end
-							end
-						end
-						counter = 200
-					end
-				end
-			end
+-- 							TriggerServerEvent("weed:killplant",crops[close]["dbID"])
+-- 							TriggerEvent("weed:giveitems",crops[close]["strain"])
+-- 						else
+-- 							if crops[close]["status"] == 1 then
+-- 								TriggerEvent("customNotification","This crop doesnt need any attention.")
+-- 							else
+-- 								if crops[close]["strain"] == "Seeded" then
+-- 									if exports["srp-inventory"]:hasEnoughOfItem("fertilizer",1,false) then
+-- 										TriggerEvent("Evidence:StateSet",4,1600)
+-- 										if math.random(100) > 85 then
+-- 											TriggerEvent("customNotification","You just consumed all the Fertilizer.")
+-- 											TriggerEvent("inventory:removeItem", "fertilizer", 1)
+-- 										end
+-- 										local new = crops[close]["growth"] + math.random(25,45)
+-- 										TriggerServerEvent("weed:UpdateWeedGrowth",crops[close]["dbID"],new)
+-- 									else
+-- 										TriggerEvent("customNotification","You need Fertilizer for this!")
+-- 									end
+-- 								else
+-- 									if exports["srp-inventory"]:hasEnoughOfItem("water",1,false) then
+-- 										TriggerEvent("Evidence:StateSet",4,1600)
+-- 										TriggerEvent("inventory:removeItem", "water", 1)
+-- 										local new = crops[close]["growth"] + math.random(14,17)
+-- 										TriggerServerEvent("weed:UpdateWeedGrowth",crops[close]["dbID"],new)
+-- 									else
+-- 										TriggerEvent("customNotification","You need 1 bottle of water for this!")
+-- 									end
+-- 								end
+-- 							end
+-- 						end
+-- 						counter = 200
+-- 					end
+-- 				end
+-- 			end
 
-		end
-	end
-end)
+-- 		end
+-- 	end
+-- end)
