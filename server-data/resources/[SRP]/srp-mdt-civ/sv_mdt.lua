@@ -3,11 +3,11 @@
 RegisterServerEvent("mdt-civ:hotKeyOpen")
 AddEventHandler("mdt-civ:hotKeyOpen", function()
 	local usource = source
-	MySQL.Async.fetchAll("SELECT * FROM (SELECT * FROM `mdt_reports` ORDER BY `id` DESC LIMIT 3) sub ORDER BY `id` DESC", {}, function(reports)
+	exports.ghmattimysql:execute("SELECT * FROM (SELECT * FROM `mdt_reports` ORDER BY `id` DESC LIMIT 3) sub ORDER BY `id` DESC", {}, function(reports)
 		for r = 1, #reports do
 			reports[r].charges = json.decode(reports[r].charges)
 		end
-		MySQL.Async.fetchAll("SELECT * FROM (SELECT * FROM `mdt_warrants` ORDER BY `id` DESC LIMIT 3) sub ORDER BY `id` DESC", {}, function(warrants)
+		exports.ghmattimysql:execute("SELECT * FROM (SELECT * FROM `mdt_warrants` ORDER BY `id` DESC LIMIT 3) sub ORDER BY `id` DESC", {}, function(warrants)
 			for w = 1, #warrants do
 				warrants[w].charges = json.decode(warrants[w].charges)
 			end
@@ -24,7 +24,7 @@ AddEventHandler("mdt-civ:getOffensesAndOfficer", function()
 	local usource = source
 	local charges = {}
 	local jailtime = {}
-	MySQL.Async.fetchAll('SELECT * FROM fine_types', {
+	exports.ghmattimysql:execute('SELECT * FROM fine_types', {
 	}, function(fines)
 		for j = 1, #fines do
 			if fines[j].category == 0 or fines[j].category == 1 or fines[j].category == 2 or fines[j].category == 3 then
@@ -42,7 +42,7 @@ RegisterServerEvent("mdt-civ:performOffenderSearch")
 AddEventHandler("mdt-civ:performOffenderSearch", function(query)
 	local usource = source
 	local matches = {}
-	MySQL.Async.fetchAll("SELECT * FROM `characters` WHERE LOWER(`first_name`) LIKE @query OR LOWER(`last_name`) LIKE @query OR CONCAT(LOWER(`first_name`), ' ', LOWER(`last_name`)) LIKE @query", {
+	exports.ghmattimysql:execute("SELECT * FROM `characters` WHERE LOWER(`first_name`) LIKE @query OR LOWER(`last_name`) LIKE @query OR CONCAT(LOWER(`first_name`), ' ', LOWER(`last_name`)) LIKE @query", {
 		['@query'] = string.lower('%'..query..'%') -- % wildcard, needed to search for all alike results
 	}, function(result)
 
@@ -57,7 +57,7 @@ end)
 RegisterServerEvent("mdt-civ:getOffenderDetails")
 AddEventHandler("mdt-civ:getOffenderDetails", function(offender)
 	local usource = source
-	MySQL.Async.fetchAll('SELECT * FROM `user_mdt` WHERE `char_id` = @id', {
+	exports.ghmattimysql:execute('SELECT * FROM `user_mdt` WHERE `char_id` = @id', {
 		['@id'] = offender.id
 	}, function(result)
 		offender.notes = ""
@@ -66,7 +66,7 @@ AddEventHandler("mdt-civ:getOffenderDetails", function(offender)
 			offender.notes = result[1].notes
 			offender.mugshot_url = result[1].mugshot_url
 		end
-		MySQL.Async.fetchAll('SELECT * FROM `user_convictions` WHERE `char_id` = @id', {
+		exports.ghmattimysql:execute('SELECT * FROM `user_convictions` WHERE `char_id` = @id', {
 			['@id'] = offender.id
 		}, function(convictions)
 			if convictions[1] then
@@ -77,7 +77,7 @@ AddEventHandler("mdt-civ:getOffenderDetails", function(offender)
 				end
 			end
 
-			MySQL.Async.fetchAll('SELECT * FROM `mdt_warrants` WHERE `char_id` = @id', {
+			exports.ghmattimysql:execute('SELECT * FROM `mdt_warrants` WHERE `char_id` = @id', {
 				['@id'] = offender.id
 			}, function(warrants)
 				if warrants[1] then
@@ -93,11 +93,11 @@ end)
 RegisterServerEvent("mdt-civ:getOffenderDetailsById")
 AddEventHandler("mdt-civ:getOffenderDetailsById", function(char_id)
 	local usource = source
-	MySQL.Async.fetchAll('SELECT * FROM `characters` WHERE `id` = @id', {
+	exports.ghmattimysql:execute('SELECT * FROM `characters` WHERE `id` = @id', {
 		['@id'] = char_id
 	}, function(result)
 		local offender = result[1]
-		MySQL.Async.fetchAll('SELECT * FROM `user_mdt` WHERE `char_id` = @id', {
+		exports.ghmattimysql:execute('SELECT * FROM `user_mdt` WHERE `char_id` = @id', {
 			['@id'] = offender.id
 		}, function(result)
 			offender.notes = ""
@@ -106,7 +106,7 @@ AddEventHandler("mdt-civ:getOffenderDetailsById", function(char_id)
 				offender.notes = result[1].notes
 				offender.mugshot_url = result[1].mugshot_url
 			end
-			MySQL.Async.fetchAll('SELECT * FROM `user_convictions` WHERE `char_id` = @id', {
+			exports.ghmattimysql:execute('SELECT * FROM `user_convictions` WHERE `char_id` = @id', {
 				['@id'] = offender.id
 			}, function(convictions)
 				if convictions[1] then
@@ -128,7 +128,7 @@ RegisterServerEvent("mdt-civ:performReportSearch")
 AddEventHandler("mdt-civ:performReportSearch", function(query)
 	local usource = source
 	local matches = {}
-	MySQL.Async.fetchAll("SELECT * FROM `mdt_reports` WHERE `id` LIKE @query OR LOWER(`title`) LIKE @query OR LOWER(`name`) LIKE @query OR LOWER(`author`) LIKE @query or LOWER(`charges`) LIKE @query", {
+	exports.ghmattimysql:execute("SELECT * FROM `mdt_reports` WHERE `id` LIKE @query OR LOWER(`title`) LIKE @query OR LOWER(`name`) LIKE @query OR LOWER(`author`) LIKE @query or LOWER(`charges`) LIKE @query", {
 		['@query'] = string.lower('%'..query..'%') -- % wildcard, needed to search for all alike results
 	}, function(result)
 
@@ -144,7 +144,7 @@ end)
 RegisterServerEvent("mdt-civ:getWarrants")
 AddEventHandler("mdt-civ:getWarrants", function()
 	local usource = source
-	MySQL.Async.fetchAll("SELECT * FROM `mdt_warrants`", {}, function(warrants)
+	exports.ghmattimysql:execute("SELECT * FROM `mdt_warrants`", {}, function(warrants)
 		for i = 1, #warrants do
 			warrants[i].expire_time = ""
 			warrants[i].charges = json.decode(warrants[i].charges)
@@ -157,7 +157,7 @@ RegisterServerEvent("mdt-civ:getReportDetailsById")
 AddEventHandler("mdt-civ:getReportDetailsById", function(query, _source)
 	if _source then source = _source end
 	local usource = source
-	MySQL.Async.fetchAll("SELECT * FROM `mdt_reports` WHERE `id` = @query", {
+	exports.ghmattimysql:execute("SELECT * FROM `mdt_reports` WHERE `id` = @query", {
 		['@query'] = query
 	}, function(result)
 		if result and result[1] then
@@ -171,7 +171,7 @@ function GetCharacterName(source)
 	local user = exports["srp-base"]:getModule("Player"):GetUser(source)
 	if user ~= false then
 		local characterId = user:getVar("character").id
-		local result = MySQL.Sync.fetchAll('SELECT first_name, last_name FROM characters WHERE id = @id', {
+		local result = exports.ghmattimysql:executeSync('SELECT first_name, last_name FROM characters WHERE id = @id', {
 			['@id'] = characterId
 		})
 
